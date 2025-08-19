@@ -1,6 +1,8 @@
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/services.dart';
+import 'package:pixel_adventure/components/collision_block.dart';
+import 'package:pixel_adventure/utils/collision_utils.dart';
 import 'package:pixel_adventure/utils/player_utils.dart';
 
 class Player extends SpriteAnimationGroupComponent with KeyboardHandler {
@@ -25,6 +27,7 @@ class Player extends SpriteAnimationGroupComponent with KeyboardHandler {
   double horizontalMove = 0.0; // Horizontal movement input
   double speed = 100.0; // Speed of the player
   Vector2 velocity = Vector2.zero();
+  List<CollisionBlock> collisionBlocks = [];
 
   @override
   Future<void> onLoad() async {
@@ -36,6 +39,7 @@ class Player extends SpriteAnimationGroupComponent with KeyboardHandler {
   @override
   void update(double dt) {
     _updatePlayerMovement(dt);
+    _checkHorizontalCollisions();
     super.update(dt);
   }
 
@@ -105,5 +109,20 @@ class Player extends SpriteAnimationGroupComponent with KeyboardHandler {
     }
     velocity.x = horizontalMove * speed;
     position.x += velocity.x * dt;
+  }
+
+  void _checkHorizontalCollisions() {
+    for (final block in collisionBlocks) {
+      if (!block.isPlatform && checkCollision(this, block)) {
+        if (velocity.x > 0) {
+          velocity.x = 0; // Stop horizontal movement
+          position.x = block.x - width; // Move left
+        } else if (velocity.x < 0) {
+          velocity.x = 0; // Stop horizontal movement
+          position.x = block.x + width; // Move right
+        }
+        break; // Exit loop after first collision
+      }
+    }
   }
 }

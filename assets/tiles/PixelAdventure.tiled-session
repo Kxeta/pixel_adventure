@@ -17,6 +17,14 @@
                 "x": 246,
                 "y": 240.5
             }
+        },
+        "Level-02.tmx": {
+            "scale": 1.6803124999999999,
+            "selectedLayer": 1,
+            "viewCenter": {
+                "x": 320.1785382183374,
+                "y": 183.8943648874838
+            }
         }
     },
     "last.imagePath": "C:/Users/phill/Documents/Projects/pixel_adventure/assets/images/Terrain",
