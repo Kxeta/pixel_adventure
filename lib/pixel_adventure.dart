@@ -3,9 +3,9 @@ import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
-import 'package:pixel_adventure/actors/player.dart';
-import 'package:pixel_adventure/actors/player_utils.dart';
-import 'package:pixel_adventure/levels/level.dart';
+import 'package:pixel_adventure/components/player.dart';
+import 'package:pixel_adventure/utils/player_utils.dart';
+import 'package:pixel_adventure/components/level.dart';
 
 class PixelAdventure extends FlameGame
     with HasKeyboardHandlerComponents, DragCallbacks {
@@ -16,7 +16,7 @@ class PixelAdventure extends FlameGame
 
   Player player = Player(characterType: playerTypes['ninja']!);
   late JoystickComponent joystick;
-  bool isJoystickActive = true;
+  bool isJoystickActive = false;
 
   @override
   Future<void> onLoad() async {
@@ -63,18 +63,18 @@ class PixelAdventure extends FlameGame
       case JoystickDirection.left:
       case JoystickDirection.upLeft:
       case JoystickDirection.downLeft:
-        player.currentPlayerDirection = PlayerDirection.left;
+        player.horizontalMove = -1.0; // Move left
         break;
       case JoystickDirection.right:
       case JoystickDirection.upRight:
       case JoystickDirection.downRight:
-        player.currentPlayerDirection = PlayerDirection.right;
+        player.horizontalMove = 1.0; // Move right
         break;
       case JoystickDirection.idle:
-        player.currentPlayerDirection = PlayerDirection.none;
+        player.horizontalMove = 0.0; // Stop moving
         break;
       default:
-        player.currentPlayerDirection = PlayerDirection.none;
+        player.horizontalMove = 0.0; // Stop moving
     }
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/services.dart';
-import 'package:pixel_adventure/actors/player_utils.dart';
+import 'package:pixel_adventure/utils/player_utils.dart';
 
 class Player extends SpriteAnimationGroupComponent with KeyboardHandler {
   Player({String? characterType})
@@ -22,11 +22,9 @@ class Player extends SpriteAnimationGroupComponent with KeyboardHandler {
   late final SpriteAnimation hitAnimation;
   late final SpriteAnimation wallJumpingAnimation;
 
-  // Player movement
-  PlayerDirection currentPlayerDirection = PlayerDirection.none;
+  double horizontalMove = 0.0; // Horizontal movement input
   double speed = 100.0; // Speed of the player
   Vector2 velocity = Vector2.zero();
-  bool isFacingRight = true;
 
   @override
   Future<void> onLoad() async {
@@ -43,22 +41,16 @@ class Player extends SpriteAnimationGroupComponent with KeyboardHandler {
 
   @override
   bool onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
+    horizontalMove = 0.0; // Reset horizontal movement
     bool isLeftPressed =
         keysPressed.contains(LogicalKeyboardKey.keyA) ||
         keysPressed.contains(LogicalKeyboardKey.arrowLeft);
     bool isRightPressed =
         keysPressed.contains(LogicalKeyboardKey.keyD) ||
         keysPressed.contains(LogicalKeyboardKey.arrowRight);
+    horizontalMove += isLeftPressed ? -1.0 : 0.0;
+    horizontalMove += isRightPressed ? 1.0 : 0.0;
 
-    if (isRightPressed && isLeftPressed) {
-      currentPlayerDirection = PlayerDirection.none;
-    } else if (isRightPressed) {
-      currentPlayerDirection = PlayerDirection.right;
-    } else if (isLeftPressed) {
-      currentPlayerDirection = PlayerDirection.left;
-    } else {
-      currentPlayerDirection = PlayerDirection.none;
-    }
     return super.onKeyEvent(event, keysPressed);
   }
 
@@ -101,31 +93,17 @@ class Player extends SpriteAnimationGroupComponent with KeyboardHandler {
   }
 
   void _updatePlayerMovement(double dt) {
-    double deltaX = 0.0;
-    switch (currentPlayerDirection) {
-      case PlayerDirection.left:
-        if (isFacingRight) {
-          flipHorizontallyAroundCenter();
-          isFacingRight = false;
-        }
-        deltaX -= speed;
-        current = PlayerState.running;
-        break;
-      case PlayerDirection.right:
-        if (!isFacingRight) {
-          flipHorizontallyAroundCenter();
-          isFacingRight = true;
-        }
-        deltaX += speed;
-        current = PlayerState.running;
-        break;
-      case PlayerDirection.none:
-        deltaX = 0.0;
-        current = PlayerState.idle;
-        break;
+    if (horizontalMove == 0) {
+      current = PlayerState.idle;
+    } else {
+      current = PlayerState.running;
+      if (horizontalMove < 0 && scale.x > 0) {
+        flipHorizontallyAroundCenter();
+      } else if (horizontalMove > 0 && scale.x < 0) {
+        flipHorizontallyAroundCenter();
+      }
     }
-
-    velocity = Vector2(deltaX, 0);
-    position += velocity * dt;
+    velocity.x = horizontalMove * speed;
+    position.x += velocity.x * dt;
   }
 }
