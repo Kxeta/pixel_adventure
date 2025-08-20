@@ -1,4 +1,7 @@
-bool checkCollision(player, block) {
+import 'package:pixel_adventure/components/collision_block.dart';
+import 'package:pixel_adventure/components/player.dart';
+
+bool checkCollision(Player player, CollisionBlock block) {
   final playerX = player.position.x;
   final playerY = player.position.y;
   final playerWidth = player.width;
@@ -10,11 +13,11 @@ bool checkCollision(player, block) {
   final blockHeight = block.height;
 
   final dynamicPlayerX = player.scale.x < 0 ? playerX - playerWidth : playerX;
-  final dynamicPlayerY = player.scale.y < 0 ? playerY - playerHeight : playerY;
+  final dynamicPlayerY = block.isPlatform ? playerY + playerHeight : playerY;
 
   // Check for collision
   return (dynamicPlayerX < blockX + blockWidth &&
       dynamicPlayerX + playerWidth > blockX &&
       dynamicPlayerY < blockY + blockHeight &&
-      dynamicPlayerY + playerHeight > blockY);
+      playerY + playerHeight > blockY);
 }
