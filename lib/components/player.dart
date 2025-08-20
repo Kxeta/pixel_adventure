@@ -1,15 +1,15 @@
+import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/services.dart';
 import 'package:pixel_adventure/components/collision_block.dart';
+import 'package:pixel_adventure/components/player_hitbox.dart';
 import 'package:pixel_adventure/utils/collision_utils.dart';
 import 'package:pixel_adventure/utils/player_utils.dart';
 
 class Player extends SpriteAnimationGroupComponent with KeyboardHandler {
   Player({String? characterType})
-    : characterType = characterType ?? playerTypes['ninja']! {
-    debugMode = true;
-  }
+    : characterType = characterType ?? playerTypes['ninja']!;
 
   // Required params
 
@@ -26,21 +26,35 @@ class Player extends SpriteAnimationGroupComponent with KeyboardHandler {
   late final SpriteAnimation hitAnimation;
   late final SpriteAnimation wallJumpingAnimation;
 
+  final double _gravity = 9.81; // Gravity constant
+  final double _jumpForce = 250.0; // Force applied for jumping
+  final double _terminalVelocity = 300.0; // Maximum falling speed
+
   double horizontalMove = 0.0; // Horizontal movement input
   double speed = 100.0; // Speed of the player
   Vector2 velocity = Vector2.zero();
   List<CollisionBlock> collisionBlocks = [];
   bool isOnGround = false; // Check if the player is on the ground
   bool hasJumped = false; // Check if the player has jumped
-  final double _gravity = 9.81; // Gravity constant
-  final double _jumpForce = 250.0; // Force applied for jumping
-  final double _terminalVelocity = 300.0; // Maximum falling speed
+  PlayerHitbox hitbox = PlayerHitbox(
+    offsetX: 10,
+    offsetY: 4,
+    width: 14,
+    height: 28,
+  );
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
     game = findGame();
     _loadAllAnimations();
+
+    add(
+      RectangleHitbox(
+        size: Vector2(hitbox.width, hitbox.height),
+        position: Vector2(hitbox.offsetX, hitbox.offsetY),
+      ),
+    );
   }
 
   @override
@@ -150,11 +164,15 @@ class Player extends SpriteAnimationGroupComponent with KeyboardHandler {
       if (!block.isPlatform && checkCollision(this, block)) {
         if (velocity.x > 0) {
           velocity.x = 0; // Stop horizontal movement
-          position.x = block.x - width; // Move left
+          position.x = block.x - hitbox.offsetX - hitbox.width; // Move left
           break; // Exit loop after first collision
         } else if (velocity.x < 0) {
           velocity.x = 0; // Stop horizontal movement
-          position.x = block.x + block.width + width; // Move right
+          position.x =
+              block.x +
+              block.width +
+              hitbox.offsetX +
+              hitbox.width; // Move right
           break; // Exit loop after first collision
         }
         break; // Exit loop after first collision
@@ -177,7 +195,10 @@ class Player extends SpriteAnimationGroupComponent with KeyboardHandler {
         if (checkCollision(this, block)) {
           if (velocity.y > 0) {
             velocity.y = 0; // Stop falling
-            position.y = block.y - height; // Move above the block
+            position.y =
+                block.y -
+                hitbox.height -
+                hitbox.offsetY; // Move above the block
             isOnGround = true; // Player is on the ground
             break; // Exit loop after first collision
           }
@@ -186,13 +207,17 @@ class Player extends SpriteAnimationGroupComponent with KeyboardHandler {
         if (checkCollision(this, block)) {
           if (velocity.y > 0) {
             // Falling down
-            position.y = block.y - height; // Move above the block
+            position.y =
+                block.y -
+                hitbox.height -
+                hitbox.offsetY; // Move above the block
             velocity.y = 0; // Stop falling
             isOnGround = true; // Player is on the ground
             break; // Exit loop after first collision
           } else if (velocity.y < 0) {
             // Jumping up
-            position.y = block.y + block.height; // Move below the block
+            position.y =
+                block.y + block.height - hitbox.offsetY; // Move below the block
             velocity.y = 0; // Stop upward movement
             isOnGround = false;
             break; // Exit loop after first collision

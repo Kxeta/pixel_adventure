@@ -6,7 +6,5 @@ class CollisionBlock extends PositionComponent {
     required Vector2 position,
     required Vector2 size,
     this.isPlatform = false,
-  }) : super(position: position, size: size) {
-    debugMode = true; // Enable debug mode for collision visualization
-  }
+  }) : super(position: position, size: size);
 }
