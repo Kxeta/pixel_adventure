@@ -1,9 +1,9 @@
-class PlayerHitbox {
+class ObjectHitbox {
   final double offsetX;
   final double offsetY;
   final double width;
   final double height;
-  PlayerHitbox({
+  ObjectHitbox({
     required this.offsetX,
     required this.offsetY,
     required this.width,

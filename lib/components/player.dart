@@ -1,13 +1,15 @@
-import 'package:flame/collisions.dart';
+import 'package:flame/collisions.dart' hide Hitbox;
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/services.dart';
 import 'package:pixel_adventure/components/collision_block.dart';
-import 'package:pixel_adventure/components/player_hitbox.dart';
+import 'package:pixel_adventure/components/fruit.dart';
+import 'package:pixel_adventure/components/object_hitbox.dart';
 import 'package:pixel_adventure/utils/collision_utils.dart';
 import 'package:pixel_adventure/utils/player_utils.dart';
 
-class Player extends SpriteAnimationGroupComponent with KeyboardHandler {
+class Player extends SpriteAnimationGroupComponent
+    with KeyboardHandler, CollisionCallbacks {
   Player({String? characterType})
     : characterType = characterType ?? playerTypes['ninja']!;
 
@@ -36,7 +38,7 @@ class Player extends SpriteAnimationGroupComponent with KeyboardHandler {
   List<CollisionBlock> collisionBlocks = [];
   bool isOnGround = false; // Check if the player is on the ground
   bool hasJumped = false; // Check if the player has jumped
-  PlayerHitbox hitbox = PlayerHitbox(
+  ObjectHitbox hitbox = ObjectHitbox(
     offsetX: 10,
     offsetY: 4,
     width: 14,
@@ -85,6 +87,15 @@ class Player extends SpriteAnimationGroupComponent with KeyboardHandler {
             keysPressed.contains(LogicalKeyboardKey.arrowUp));
 
     return super.onKeyEvent(event, keysPressed);
+  }
+
+  @override
+  void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
+    if (other is Fruit) {
+      // Handle collision with Fruit
+      other.collidingWithPlayer();
+    }
+    super.onCollision(intersectionPoints, other);
   }
 
   void _loadAllAnimations() {
