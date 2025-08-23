@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:pixel_adventure/components/collision_block.dart';
 import 'package:pixel_adventure/components/fruit.dart';
 import 'package:pixel_adventure/components/object_hitbox.dart';
+import 'package:pixel_adventure/components/saw.dart';
 import 'package:pixel_adventure/utils/collision_utils.dart';
 import 'package:pixel_adventure/utils/player_utils.dart';
 
@@ -27,17 +28,24 @@ class Player extends SpriteAnimationGroupComponent
   late final SpriteAnimation jumpingAnimation;
   late final SpriteAnimation hitAnimation;
   late final SpriteAnimation wallJumpingAnimation;
+  late final SpriteAnimation appearingAnimation;
+  late final SpriteAnimation desappearingAnimation;
 
   final double _gravity = 9.81; // Gravity constant
   final double _jumpForce = 250.0; // Force applied for jumping
-  final double _terminalVelocity = 300.0; // Maximum falling speed
+  final double _terminalVelocity = 300.0; // Maximum falling speed\
+  final double stepTime = 0.05; // Animation step time
+  final double specialStepTime = 0.07; // Animation step time
 
+  Vector2 startingPosition = Vector2.zero();
   double horizontalMove = 0.0; // Horizontal movement input
   double speed = 100.0; // Speed of the player
   Vector2 velocity = Vector2.zero();
   List<CollisionBlock> collisionBlocks = [];
   bool isOnGround = false; // Check if the player is on the ground
   bool hasJumped = false; // Check if the player has jumped
+  bool gotHit = false; // Check if the player got hit
+  Vector2 hitPosition = Vector2.zero();
   ObjectHitbox hitbox = ObjectHitbox(
     offsetX: 10,
     offsetY: 4,
@@ -50,6 +58,7 @@ class Player extends SpriteAnimationGroupComponent
     await super.onLoad();
     game = findGame();
     _loadAllAnimations();
+    startingPosition = Vector2(position.x, position.y);
 
     add(
       RectangleHitbox(
@@ -61,10 +70,12 @@ class Player extends SpriteAnimationGroupComponent
 
   @override
   void update(double dt) {
-    _updatePlayerMovement(dt);
-    _checkHorizontalCollisions();
-    _addGravity(dt);
-    _checkVerticalCollisions();
+    if (!gotHit) {
+      _updatePlayerMovement(dt);
+      _checkHorizontalCollisions();
+      _addGravity(dt);
+      _checkVerticalCollisions();
+    }
     super.update(dt);
   }
 
@@ -85,7 +96,6 @@ class Player extends SpriteAnimationGroupComponent
         (keysPressed.contains(LogicalKeyboardKey.space) ||
             keysPressed.contains(LogicalKeyboardKey.keyW) ||
             keysPressed.contains(LogicalKeyboardKey.arrowUp));
-
     return super.onKeyEvent(event, keysPressed);
   }
 
@@ -95,10 +105,15 @@ class Player extends SpriteAnimationGroupComponent
       // Handle collision with Fruit
       other.collidingWithPlayer();
     }
+    if (other is Saw) {
+      // Handle collision with Saw
+      _playerHit();
+    }
     super.onCollision(intersectionPoints, other);
   }
 
   void _loadAllAnimations() {
+    // Load player animations
     doubleJumpingAnimation = _getPlayerAnimation(PlayerState.doubleJumping, 6);
     fallingAnimation = _getPlayerAnimation(PlayerState.falling, 1);
     hitAnimation = _getPlayerAnimation(PlayerState.hit, 7);
@@ -106,7 +121,14 @@ class Player extends SpriteAnimationGroupComponent
     jumpingAnimation = _getPlayerAnimation(PlayerState.jumping, 1);
     runningAnimation = _getPlayerAnimation(PlayerState.running, 12);
     wallJumpingAnimation = _getPlayerAnimation(PlayerState.wallJumping, 5);
-    // Add other animations like running, jumping, etc.
+
+    //Load special animations
+    appearingAnimation = _getSpecialPlayerAnimation(PlayerState.appearing);
+    desappearingAnimation = _getSpecialPlayerAnimation(
+      PlayerState.desappearing,
+    );
+
+    // Add all animations
     animations = {
       PlayerState.doubleJumping: doubleJumpingAnimation,
       PlayerState.falling: fallingAnimation,
@@ -115,10 +137,12 @@ class Player extends SpriteAnimationGroupComponent
       PlayerState.jumping: jumpingAnimation,
       PlayerState.running: runningAnimation,
       PlayerState.wallJumping: wallJumpingAnimation,
+      PlayerState.appearing: appearingAnimation,
+      PlayerState.desappearing: desappearingAnimation,
     };
 
     // Set the initial animation to be idle
-    current = PlayerState.running;
+    current = PlayerState.idle;
   }
 
   SpriteAnimation _getPlayerAnimation(PlayerState playerState, int amount) {
@@ -129,8 +153,21 @@ class Player extends SpriteAnimationGroupComponent
       ),
       SpriteAnimationData.sequenced(
         amount: amount,
-        stepTime: 0.05,
+        stepTime: stepTime,
         textureSize: Vector2.all(32),
+        loop: true,
+      ),
+    );
+  }
+
+  SpriteAnimation _getSpecialPlayerAnimation(PlayerState playerState) {
+    String state = playerAnimationsStates[playerState] ?? 'Appearing';
+    return SpriteAnimation.fromFrameData(
+      game!.images.fromCache('Main Characters/$state (96x96).png'),
+      SpriteAnimationData.sequenced(
+        amount: 7,
+        stepTime: specialStepTime,
+        textureSize: Vector2.all(96),
         loop: true,
       ),
     );
@@ -237,5 +274,65 @@ class Player extends SpriteAnimationGroupComponent
         }
       }
     }
+  }
+
+  void _playerHit() {
+    gotHit = true; // Set hit state
+    hitPosition = Vector2(position.x, position.y);
+    velocity = Vector2.zero(); // Stop all movement
+    horizontalMove = 0.0; // Reset horizontal movement
+    current = PlayerState.hit;
+    final duration = hitAnimation.frames.length * stepTime;
+    TimerComponent timerComponent = TimerComponent(
+      period: duration,
+      removeOnFinish: true,
+      onTick: () {
+        // after hit finishes
+        _resetPlayer();
+      },
+    );
+
+    add(timerComponent);
+  }
+
+  void _resetPlayer() {
+    current = PlayerState.desappearing;
+    position = Vector2(
+      hitPosition.x - (32 * scale.x),
+      hitPosition.y - 32,
+    ); // Move below starting position
+    final duration = desappearingAnimation.frames.length * specialStepTime;
+    TimerComponent timerComponent = TimerComponent(
+      period: duration,
+      removeOnFinish: true,
+      onTick: () {
+        // after desappearing finishes
+        _appear();
+      },
+    );
+    add(timerComponent);
+  }
+
+  void _appear() {
+    if (scale.x < 0) {
+      flipHorizontallyAroundCenter(); // Reset flip if needed
+    }
+    position = Vector2(
+      startingPosition.x - 32,
+      startingPosition.y - 32,
+    ); // Move above starting position
+    current = PlayerState.appearing;
+    final duration = appearingAnimation.frames.length * specialStepTime;
+    TimerComponent timerComponent = TimerComponent(
+      period: duration,
+      removeOnFinish: true,
+      onTick: () {
+        // after appearing finishes
+        position = startingPosition; // Move to starting position
+        gotHit = false; // Reset hit state
+      },
+    );
+
+    add(timerComponent);
   }
 }

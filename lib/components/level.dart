@@ -8,6 +8,7 @@ import 'package:flutter/painting.dart';
 import 'package:pixel_adventure/components/collision_block.dart';
 import 'package:pixel_adventure/components/fruit.dart';
 import 'package:pixel_adventure/components/player.dart';
+import 'package:pixel_adventure/components/saw.dart';
 
 class Level extends World {
   // Required params
@@ -71,6 +72,17 @@ class Level extends World {
               fruit: spawnPoint.name,
             );
             add(fruitObject);
+            break;
+          case 'Saw':
+            final sawObject = Saw(
+              position: spawnPoint.position,
+              size: spawnPoint.size,
+              isVertical: spawnPoint.properties.getValue('isVertical') ?? false,
+              offNeg: spawnPoint.properties.getValue('offNeg') ?? 0,
+              offPos: spawnPoint.properties.getValue('offPos') ?? 0,
+            );
+            add(sawObject);
+            break;
           default:
             // Handle other spawn points if necessary
             break;

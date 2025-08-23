@@ -6,6 +6,8 @@ enum PlayerState {
   hit,
   doubleJumping,
   wallJumping,
+  appearing,
+  desappearing,
 }
 
 enum PlayerDirection { left, right, none }
@@ -25,4 +27,6 @@ Map<PlayerState, String> playerAnimationsStates = {
   PlayerState.hit: 'Hit',
   PlayerState.doubleJumping: 'Double Jump',
   PlayerState.wallJumping: 'Wall Jump',
+  PlayerState.appearing: 'Appearing',
+  PlayerState.desappearing: 'Desappearing',
 };
